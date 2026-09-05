@@ -87,12 +87,14 @@ def _install_systemd(interval: int) -> None:
 
 
 def _uninstall_systemd() -> None:
-    subprocess.run(["systemctl", "--user", "disable", "--now", TIMER_NAME], check=False)
+    if not (UNIT_DIR / TIMER_NAME).exists():
+        return
+    subprocess.run(["systemctl", "--user", "disable", "--now", TIMER_NAME], check=False, capture_output=True)
     for name in (SERVICE_NAME, TIMER_NAME):
         path = UNIT_DIR / name
         if path.exists():
             path.unlink()
-    subprocess.run(["systemctl", "--user", "daemon-reload"], check=False)
+    subprocess.run(["systemctl", "--user", "daemon-reload"], check=False, capture_output=True)
     print(ui.success("Removed the scheduled run."))
 
 
@@ -119,7 +121,10 @@ def _install_windows(interval: int) -> None:
 
 
 def _uninstall_windows() -> None:
-    subprocess.run(["schtasks", "/Delete", "/TN", TASK_NAME, "/F"], check=False)
+    query = subprocess.run(["schtasks", "/Query", "/TN", TASK_NAME], check=False, capture_output=True)
+    if query.returncode != 0:
+        return
+    subprocess.run(["schtasks", "/Delete", "/TN", TASK_NAME, "/F"], check=False, capture_output=True)
     print(ui.success("Removed the scheduled run."))
 
 

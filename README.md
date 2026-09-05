@@ -136,6 +136,17 @@ lingering: `loginctl enable-linger $(whoami)`.
 Changing the cadence later is just: edit `schedule_interval_hours` in
 `config.json`, then run `schedule --install` again.
 
+## Starting over
+
+```bash
+rojgar --reset
+```
+
+Deletes `config.json`, the job database, and the geocode cache, and removes
+any scheduled run -- the next `rojgar run` or `rojgar ui` behaves exactly
+like a fresh install. Asks you to type `reset` to confirm first (this
+cannot be undone); pass `--yes` to skip the prompt.
+
 ## Staying up to date
 
 ```bash

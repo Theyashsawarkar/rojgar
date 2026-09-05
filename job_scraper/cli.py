@@ -13,7 +13,7 @@ import secrets
 import sys
 import webbrowser
 
-from . import auth, config as config_module, db, scheduler, ui, updater
+from . import auth, config as config_module, db, geocoding, scheduler, ui, updater
 from .config import Config
 from .runner import resolve_db_path, run as run_scrapers
 
@@ -45,6 +45,8 @@ def _build_parser() -> argparse.ArgumentParser:
             "  rojgar schedule --uninstall\n\n"
             "Staying current:\n"
             "  rojgar --update              pull the latest version from GitHub and reinstall\n\n"
+            "Starting over:\n"
+            "  rojgar --reset               wipe config, database and cache -- fresh install state\n\n"
             "Account:\n"
             "  rojgar auth                  set/reset the username and password for the dashboard\n\n"
             "Config file: config.json in the project root (safe to edit by hand -- e.g.\n"
@@ -52,9 +54,20 @@ def _build_parser() -> argparse.ArgumentParser:
             "Jobs database: rojgar.db in the project root, unless --db says otherwise\n"
         ),
     )
-    parser.add_argument(
+    top_level_action = parser.add_mutually_exclusive_group()
+    top_level_action.add_argument(
         "--update", action="store_true",
         help="Check GitHub for a newer version of rojgar, pull it, and reinstall dependencies",
+    )
+    top_level_action.add_argument(
+        "--reset", action="store_true",
+        help="Delete config.json, the job database, and the geocode cache, and remove any "
+             "scheduled run -- the next 'rojgar run' or 'rojgar ui' starts fresh, as if just "
+             "installed. Asks for confirmation first unless --yes is also given.",
+    )
+    parser.add_argument(
+        "--yes", "-y", action="store_true",
+        help="Skip the confirmation prompt for --reset",
     )
     subparsers = parser.add_subparsers(dest="command")
 
@@ -234,12 +247,43 @@ def _run_ui(config: Config, args: argparse.Namespace) -> None:
     webapp.run(db_path, config.secret_key, host=args.host, port=args.port)
 
 
+def _reset(args: argparse.Namespace) -> None:
+    config = config_module.load()
+    db_path = resolve_db_path(config) if config is not None else resolve_db_path(Config())
+    targets = [config_module.CONFIG_PATH, db_path, geocoding.CACHE_PATH]
+    existing = [p for p in targets if p.exists()]
+
+    if not existing:
+        print(ui.info("Nothing to reset -- no config, database, or cache found."))
+        return
+
+    print(ui.warn("This will permanently delete:"))
+    for path in existing:
+        print(f"  - {path}")
+    print(ui.warn("Your job history and dashboard login cannot be recovered after this.\n"))
+
+    if not args.yes:
+        answer = input("Type 'reset' to confirm: ").strip()
+        if answer != "reset":
+            print("Cancelled -- nothing was deleted.")
+            return
+
+    scheduler.uninstall()
+    for path in existing:
+        path.unlink()
+    print(ui.success("\nReset complete. Run 'rojgar run' or 'rojgar ui' to start fresh."))
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = _build_parser()
     args = parser.parse_args(argv)
 
     if args.update:
         updater.check_and_update()
+        return 0
+
+    if args.reset:
+        _reset(args)
         return 0
 
     if args.command is None:
