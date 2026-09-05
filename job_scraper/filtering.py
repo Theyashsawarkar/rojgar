@@ -6,10 +6,24 @@ against already-saved rows misses that entirely).
 """
 from __future__ import annotations
 
+import re
+
 from . import salary as salary_module
 from .config import Config
 from .geocoding import within_radius
 from .models import Job
+
+# Remote postings often give a comma-separated list of eligible
+# regions instead of a real place -- e.g. "LATAM, Europe, USA, Canada,
+# APAC" -- which Nominatim can't geocode as a location at all, so
+# within_radius() returns None ("unknown") for it. Left alone, that
+# fell back to include_unknown_location's default of True, letting
+# clearly non-India-eligible postings slip straight through a Mumbai
+# search. If the string reads like a region list AND doesn't mention
+# India (or a region that plausibly includes it), treat that as a
+# real non-match instead of "unknown".
+_REGION_LIST = re.compile(r"\b(usa|us|canada|latam|europe|uk|emea|australia|nz)\b", re.I)
+_INDIA_INCLUSIVE = re.compile(r"\b(india|apac|asia|worldwide|anywhere|global)\b", re.I)
 
 
 def matches_keywords(job: Job, keywords: list[str]) -> bool:
@@ -35,9 +49,11 @@ def matches_location(job: Job, config: Config) -> bool:
     if not job.location:
         return config.include_unknown_location
     result = within_radius(config.city, job.location, config.radius_km)
-    if result is None:
-        return config.include_unknown_location
-    return result
+    if result is not None:
+        return result
+    if _REGION_LIST.search(job.location) and not _INDIA_INCLUSIVE.search(job.location):
+        return False
+    return config.include_unknown_location
 
 
 def filter_jobs(jobs: list[Job], config: Config) -> list[Job]:
