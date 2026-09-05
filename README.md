@@ -225,4 +225,3 @@ key), `rojgar.db` (your personal data, including your hashed dashboard
 password), and `data/geocode_cache.json` (regenerates automatically) are
 all gitignored -- see `.gitignore`.
 
-<!-- test: confirms self-update fast-forward -->
