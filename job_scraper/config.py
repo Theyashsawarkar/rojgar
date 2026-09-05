@@ -6,7 +6,7 @@ without touching the saved file.
 from __future__ import annotations
 
 import json
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, replace
 from pathlib import Path
 
 from . import ui
@@ -166,4 +166,25 @@ def run_interactive_setup() -> Config:
     )
     save(config)
     print(ui.success(f"\nSaved to {CONFIG_PATH}.") + f" Run {ui.bold('rojgar run')} any time, or {ui.bold('rojgar configure')} to change these again.\n")
+    return config
+
+
+def run_keys_setup() -> Config:
+    """Set/update just the free Adzuna/Jooble API keys, without
+    re-running the whole interactive setup -- everything else in
+    config.json is left untouched. Blank input keeps whatever value
+    is already saved, so re-running this to change one key doesn't
+    require re-typing the others."""
+    config = load() or Config()
+    print(ui.heading("API keys for India-specific sources") + ui.dim(" (blank keeps the current value)\n"))
+    print(ui.dim("Adzuna (free): https://developer.adzuna.com/"))
+    print(ui.dim("Jooble (free): https://jooble.org/api/about\n"))
+
+    adzuna_app_id = _ask("Adzuna app_id", config.adzuna_app_id)
+    adzuna_app_key = _ask("Adzuna app_key", config.adzuna_app_key)
+    jooble_api_key = _ask("Jooble API key", config.jooble_api_key)
+
+    config = replace(config, adzuna_app_id=adzuna_app_id, adzuna_app_key=adzuna_app_key, jooble_api_key=jooble_api_key)
+    save(config)
+    print(ui.success(f"\nSaved to {CONFIG_PATH}."))
     return config

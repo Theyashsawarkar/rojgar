@@ -88,9 +88,10 @@ rojgar ui
 ```
 
 Opens `http://127.0.0.1:5151` in your browser -- a dark, searchable table of
-every job in your database, with stat cards (total / applied / not applied),
-a search box, an applied/not-applied filter, and a one-click "Mark applied"
-toggle, replacing the old "open jobs.xlsx and edit a cell" flow entirely.
+every job in your database (Company, Title, **Package**, Location, Source),
+with stat cards (total / applied / not applied), a search box, an
+applied/not-applied filter, and a one-click "Mark applied" toggle, replacing
+the old "open jobs.xlsx and edit a cell" flow entirely.
 
 The first time you run `rojgar ui`, it asks you to set a dashboard username
 and password (stored as a salted hash in the database, never in plain
@@ -108,9 +109,10 @@ To change the login later: `rojgar auth`.
 - **Salary**: if you target 6 LPA with the default ±1 buffer, jobs from
   5 to 7 LPA are shown. Salary strings come in wildly different formats
   across sources ("4-6 LPA", "$50k-70k", "40k/month", "Not disclosed") --
-  `job_scraper/salary.py` does its best to normalize all of them to LPA; a
-  job whose salary can't be parsed at all is still kept and shown with its
-  raw text (configurable via `--include-unknown-salary` /
+  `job_scraper/salary.py` normalizes all of them into a single "Package"
+  figure in LPA (shown in the dashboard), and a job whose salary can't be
+  parsed at all is still kept and shown as "Not disclosed" rather than
+  dropped (configurable via `--include-unknown-salary` /
   `--exclude-unknown-salary`).
 - **Dedup**: every job gets a dedup key from whichever strategy you chose
   (`title_company`, `url`, or `both`). A job is skipped if it matches
@@ -177,13 +179,20 @@ remote-global boards that happen to be open to India-based candidates.
 
 ### Getting free API keys
 
-- **Adzuna**: register at https://developer.adzuna.com/ for an `app_id` +
-  `app_key`, then put them in `config.json` (`adzuna_app_id`,
-  `adzuna_app_key`) or pass `--adzuna-app-id`/`--adzuna-app-key` per run.
-- **Jooble**: register at https://jooble.org/api/about, they email you a
-  key -- put it in `config.json` (`jooble_api_key`) or pass
-  `--jooble-api-key` per run.
+```bash
+rojgar keys
+```
 
+Prompts for your Adzuna `app_id`/`app_key` and Jooble API key and saves them
+to `config.json` -- leave any of them blank to keep whatever's already
+saved, so updating one key later doesn't mean re-typing the others.
+
+- **Adzuna**: register at https://developer.adzuna.com/ (instant, free).
+- **Jooble**: register at https://jooble.org/api/about (they email you a
+  key).
+
+You can also set them per-run only, without saving, via
+`--adzuna-app-id`/`--adzuna-app-key`/`--jooble-api-key` on `rojgar run`.
 Without a key, that source is skipped with a one-line note; every other
 source still runs normally.
 
@@ -202,7 +211,7 @@ source still runs normally.
 
 ```
 job_scraper/
-  cli.py          argparse CLI: run / configure / schedule / ui / auth, --update
+  cli.py          argparse CLI: run / configure / schedule / ui / auth / keys, --update, --reset
   config.py       Config dataclass, load/save, interactive setup
   runner.py       wires scrapers + filtering + db together
   filtering.py    keyword/salary/location matching, dedup
@@ -231,8 +240,8 @@ point are declared in `pyproject.toml`.
 
 ## Files not committed
 
-`.venv/`, `config.json` (your personal preferences and dashboard session
-key), `rojgar.db` (your personal data, including your hashed dashboard
-password), and `data/geocode_cache.json` (regenerates automatically) are
-all gitignored -- see `.gitignore`.
+`.venv/`, `config.json` (your personal preferences, dashboard session key,
+and Adzuna/Jooble API keys), `rojgar.db` (your personal data, including
+your hashed dashboard password), and `data/geocode_cache.json` (regenerates
+automatically) are all gitignored -- see `.gitignore`.
 

@@ -48,7 +48,8 @@ def _build_parser() -> argparse.ArgumentParser:
             "Starting over:\n"
             "  rojgar --reset               wipe config, database and cache -- fresh install state\n\n"
             "Account:\n"
-            "  rojgar auth                  set/reset the username and password for the dashboard\n\n"
+            "  rojgar auth                  set/reset the username and password for the dashboard\n"
+            "  rojgar keys                  set/update the free Adzuna and Jooble API keys\n\n"
             "Config file: config.json in the project root (safe to edit by hand -- e.g.\n"
             "             change schedule_interval_hours, then re-run schedule --install)\n"
             "Jobs database: rojgar.db in the project root, unless --db says otherwise\n"
@@ -176,6 +177,13 @@ def _build_parser() -> argparse.ArgumentParser:
         "auth",
         help="Set or reset the username/password used to log into the web dashboard",
         description="Set or reset the username/password used to log into the web dashboard.",
+    )
+
+    subparsers.add_parser(
+        "keys",
+        help="Set or update the free Adzuna/Jooble API keys for India-specific sources",
+        description="Set or update the free Adzuna/Jooble API keys used by the adzuna and jooble "
+                     "sources. Blank input keeps whatever's already saved.",
     )
 
     return parser
@@ -312,6 +320,10 @@ def main(argv: list[str] | None = None) -> int:
         auth.set_password(conn, username, password)
         conn.close()
         print(ui.success(f"Login saved for '{username}'."))
+        return 0
+
+    if args.command == "keys":
+        config_module.run_keys_setup()
         return 0
 
     if args.command == "ui":

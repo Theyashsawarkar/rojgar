@@ -71,6 +71,20 @@ def parse_salary_lpa(raw: str) -> tuple[float, float] | None:
     return (round(min(values), 2), round(max(values), 2))
 
 
+def format_package(raw: str) -> str:
+    """The dashboard's "Package" column -- a normalized LPA figure
+    instead of the wildly inconsistent raw text each source writes.
+    "Not disclosed" for anything that couldn't be parsed, rather than
+    hiding or dropping the job over it."""
+    parsed = parse_salary_lpa(raw)
+    if parsed is None:
+        return "Not disclosed"
+    lo, hi = parsed
+    if lo == hi:
+        return f"{lo:g} LPA"
+    return f"{lo:g} - {hi:g} LPA"
+
+
 def in_range(raw: str, target_min: float, target_max: float) -> bool | None:
     """True/False if the parsed range overlaps [target_min, target_max],
     None if the salary couldn't be parsed at all (caller decides whether

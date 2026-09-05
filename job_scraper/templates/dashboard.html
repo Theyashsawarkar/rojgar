@@ -32,7 +32,7 @@
   <table class="jobs">
     <thead>
       <tr>
-        <th>Company</th><th>Title</th><th>Salary</th><th>Location</th><th>Source</th><th>Status</th><th>Apply</th>
+        <th>Company</th><th>Title</th><th>Package</th><th>Location</th><th>Source</th><th>Status</th><th>Apply</th>
       </tr>
     </thead>
     <tbody>
@@ -40,7 +40,7 @@
       <tr id="job-{{ job['id'] }}" class="{{ 'applied' if job['is_applied'] else '' }}">
         <td>{{ job['company'] }}</td>
         <td>{{ job['title'] }}</td>
-        <td>{{ job['salary'] or '—' }}</td>
+        <td>{{ job['package'] or '—' }}</td>
         <td>{{ job['location'] or '—' }}</td>
         <td><span class="badge">{{ job['source'] }}</span></td>
         <td>
