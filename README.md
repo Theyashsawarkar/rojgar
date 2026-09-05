@@ -1,25 +1,47 @@
-# job-scraper
+# Rojgar
 
-A terminal tool that searches multiple job sources for listings matching
-your tech stack, city (plus a search radius around it), salary range, and
-experience level, and logs new matches to an Excel sheet -- so the same
-posting never shows up twice.
+("rojgar" -- रोजगार, Hindi for "employment") A terminal tool that searches
+multiple job sources for listings matching your tech stack, city (plus a
+search radius around it), salary range, and experience level, and logs new
+matches to an Excel sheet -- so the same posting never shows up twice.
 
-## Setup
+```
+========================================
+  R O J G A R  -  Job Search Scraper
+========================================
+```
 
-The system Python here has no `pip`/`sudo` available, so dependencies live
-in a project-local virtual environment instead of anything system-wide:
+## Install
+
+Installs into a project-local virtual environment and puts a `rojgar`
+command on your PATH, so you can run it from anywhere without `cd`-ing into
+the project or activating the venv each time.
+
+**Linux / macOS:**
 
 ```bash
 cd job-scraper
-python3 -m venv .venv
-.venv/bin/pip install -r requirements.txt
+./scripts/install.sh
 ```
+
+**Windows (PowerShell):**
+
+```powershell
+cd job-scraper
+powershell -ExecutionPolicy Bypass -File scripts\install.ps1
+```
+
+Open a new terminal afterwards if `rojgar` isn't found right away -- PATH
+changes only apply to terminals opened after the change.
+
+> The Windows installer/scheduler were written carefully but only tested on
+> Linux in this session (no Windows machine was available to verify against).
+> If something doesn't work as described, that's the first place to check.
 
 ## First run
 
 ```bash
-.venv/bin/python -m job_scraper run
+rojgar run
 ```
 
 The first run walks you through a one-question-at-a-time setup (tech stack,
@@ -30,26 +52,28 @@ again. Every question has a sane default -- just press Enter to accept it.
 To redo the setup from scratch:
 
 ```bash
-.venv/bin/python -m job_scraper configure
+rojgar configure
 ```
 
 ## Everyday use
 
 ```bash
-.venv/bin/python -m job_scraper run
+rojgar run
 ```
 
 Searches again using your saved `config.json`. Any flag overrides that one
 run only -- it never touches the saved file:
 
 ```bash
-.venv/bin/python -m job_scraper run --city Pune --radius-km 100 --salary-target 8
+rojgar run --city Pune --radius-km 100 --salary-target 8
 ```
 
-Run `job-scraper run --help` for the full list of overridable flags
-(tech stack, city, radius, salary target/buffer, experience, dedup
-strategy, sources, output file, API keys, unknown-salary/location
-handling).
+Run `rojgar run --help` for the full list of overridable flags (tech stack,
+city, radius, salary target/buffer, experience, dedup strategy, sources,
+output file, API keys, unknown-salary/location handling).
+
+Output is colored when run in a real terminal, and automatically plain when
+piped/redirected or when the `NO_COLOR` environment variable is set.
 
 ## How matching works
 
@@ -75,17 +99,15 @@ Either edit `run_pattern`/`schedule_interval_hours` directly in
 `config.json`, or choose "scheduled" during interactive setup -- then:
 
 ```bash
-.venv/bin/python -m job_scraper schedule --install    # reads schedule_interval_hours from config.json
-.venv/bin/python -m job_scraper schedule --status
-.venv/bin/python -m job_scraper schedule --uninstall
+rojgar schedule --install    # reads schedule_interval_hours from config.json
+rojgar schedule --status
+rojgar schedule --uninstall
 ```
 
-This installs a `systemd --user` timer (`~/.config/systemd/user/job-scraper.*`).
-It only fires while you're logged in unless you enable lingering:
+This uses `systemd --user` timers on Linux and Task Scheduler on Windows.
 
-```bash
-loginctl enable-linger $(whoami)
-```
+On Linux, the timer only fires while you're logged in unless you enable
+lingering: `loginctl enable-linger $(whoami)`.
 
 Changing the cadence later is just: edit `schedule_interval_hours` in
 `config.json`, then run `schedule --install` again.
@@ -142,13 +164,18 @@ job_scraper/
   excel_store.py  reads/writes jobs.xlsx
   models.py       the Job dataclass every scraper returns
   text_utils.py   small shared text-cleanup helpers
-  scheduler.py    systemd --user timer install/status/uninstall
+  ui.py           cross-platform terminal colors/banner
+  scheduler.py    systemd --user timer (Linux) / Task Scheduler (Windows)
   scrapers/       one file per job source, each a JobScraper subclass
+scripts/
+  install.sh      Linux/macOS installer -- venv + pip install -e . + PATH link
+  install.ps1     Windows installer -- venv + pip install -e . + PATH link
 ```
 
 Adding a new source is one file in `scrapers/` implementing
 `JobScraper.search(config) -> list[Job]`, plus one line in
-`scrapers/__init__.py`.
+`scrapers/__init__.py`. The package name (`rojgar`) and console-script entry
+point are declared in `pyproject.toml`.
 
 ## Files not committed
 

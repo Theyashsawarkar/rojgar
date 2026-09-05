@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import requests
 
+from .. import ui
 from ..config import Config
 from ..models import Job
 from ..text_utils import normalize_location, strip_html
@@ -30,7 +31,7 @@ class RemotiveScraper(JobScraper):
                 response = requests.get(API_URL, params={"search": keyword}, timeout=15)
                 response.raise_for_status()
             except requests.RequestException as error:
-                print(f"  ⚠️  remotive: request failed for '{keyword}': {error}")
+                print(ui.warn(f"  ⚠️  remotive: request failed for '{keyword}': {error}"))
                 continue
 
             for raw in response.json().get("jobs", []):

@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import requests
 
+from .. import ui
 from ..config import Config
 from ..models import Job
 from ..text_utils import normalize_location, strip_html
@@ -24,7 +25,7 @@ class AdzunaScraper(JobScraper):
 
     def search(self, config: Config) -> list[Job]:
         if not config.adzuna_app_id or not config.adzuna_app_key:
-            print("  ℹ️  adzuna: skipped -- no API key set (see README for how to get a free one)")
+            print(ui.info("  ℹ️  adzuna: skipped -- no API key set (see README for how to get a free one)"))
             return []
 
         jobs: list[Job] = []
@@ -44,7 +45,7 @@ class AdzunaScraper(JobScraper):
                     response = requests.get(API_URL.format(page=page), params=params, timeout=15)
                     response.raise_for_status()
                 except requests.RequestException as error:
-                    print(f"  ⚠️  adzuna: request failed for '{keyword}' page {page}: {error}")
+                    print(ui.warn(f"  ⚠️  adzuna: request failed for '{keyword}' page {page}: {error}"))
                     break
 
                 results = response.json().get("results", [])

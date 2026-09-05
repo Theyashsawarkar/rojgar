@@ -11,6 +11,7 @@ import sys
 
 from . import config as config_module
 from . import scheduler
+from . import ui
 from .config import Config
 from .runner import run as run_scrapers
 
@@ -20,7 +21,7 @@ _KNOWN_SOURCES = config_module.KNOWN_SOURCES
 
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        prog="job-scraper",
+        prog="rojgar",
         description=(
             "Finds India-relevant job listings matching your tech stack, city, "
             "salary and experience, and logs new ones to an Excel sheet so you "
@@ -29,18 +30,18 @@ def _build_parser() -> argparse.ArgumentParser:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=(
             "First run:\n"
-            "  job-scraper run                   interactive setup, then searches right away\n\n"
+            "  rojgar run                   interactive setup, then searches right away\n\n"
             "Everyday use:\n"
-            "  job-scraper run                   search again with your saved preferences\n"
-            "  job-scraper run --city Pune --radius-km 100\n"
-            "                                     one-off override for this run only\n"
-            "  job-scraper configure             redo the interactive setup from scratch\n\n"
+            "  rojgar run                   search again with your saved preferences\n"
+            "  rojgar run --city Pune --radius-km 100\n"
+            "                                one-off override for this run only\n"
+            "  rojgar configure             redo the interactive setup from scratch\n\n"
             "Recurring runs:\n"
-            "  job-scraper schedule --install    search automatically on your saved interval\n"
-            "  job-scraper schedule --status\n"
-            "  job-scraper schedule --uninstall\n\n"
-            "Config file: job_scraper/config.json (safe to edit by hand -- e.g. change\n"
-            "             schedule_interval_hours, then re-run schedule --install)\n"
+            "  rojgar schedule --install    search automatically on your saved interval\n"
+            "  rojgar schedule --status\n"
+            "  rojgar schedule --uninstall\n\n"
+            "Config file: config.json in the project root (safe to edit by hand -- e.g.\n"
+            "             change schedule_interval_hours, then re-run schedule --install)\n"
             "Jobs sheet:  jobs.xlsx in the project root, unless --output says otherwise\n"
         ),
     )
@@ -147,6 +148,7 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if args.command == "configure":
+        ui.print_banner()
         config_module.run_interactive_setup()
         return 0
 
@@ -161,9 +163,10 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     # args.command == "run"
+    ui.print_banner()
     config = config_module.load()
     if config is None:
-        print("No saved preferences found -- let's set them up.\n")
+        print(ui.info("No saved preferences found -- let's set them up.\n"))
         config = config_module.run_interactive_setup()
     config = _apply_overrides(config, args)
     run_scrapers(config)

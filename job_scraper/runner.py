@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from . import ui
 from .config import Config
 from .excel_store import append_jobs, existing_keys, load_or_create, save
 from .filtering import dedup_new_jobs, filter_jobs
@@ -27,20 +28,20 @@ def run(config: Config) -> None:
         if scraper_cls is None:
             print(f"  ⚠️  unknown source '{name}' in config -- skipping")
             continue
-        print(f"Searching {name}...")
+        print(ui.bold(f"Searching {name}..."))
         try:
             found = scraper_cls().search(config)
         except Exception as error:
             # One source misbehaving (a schema change, a timeout that
             # slips past requests' own handling, etc.) shouldn't take
             # the whole run down with it.
-            print(f"  ⚠️  {name}: unexpected error, skipping this source: {error}")
+            print(ui.warn(f"  ⚠️  {name}: unexpected error, skipping this source: {error}"))
             continue
-        print(f"  found {len(found)} listing(s)")
+        print(ui.dim(f"  found {len(found)} listing(s)"))
         all_jobs.extend(found)
 
     matched = filter_jobs(all_jobs, config)
-    print(f"\n{len(matched)} of {len(all_jobs)} listing(s) match your keywords/salary/location.")
+    print(ui.info(f"\n{len(matched)} of {len(all_jobs)} listing(s) match your keywords/salary/location."))
 
     wb = load_or_create(output_path)
     keys = existing_keys(wb, config.dedup_strategy)
@@ -50,4 +51,5 @@ def run(config: Config) -> None:
     save(wb, output_path)
 
     already_logged = len(matched) - len(new_jobs)
-    print(f"Added {len(new_jobs)} new job(s) to {output_path.name} ({already_logged} already logged).")
+    summary = f"Added {len(new_jobs)} new job(s) to {output_path.name} ({already_logged} already logged)."
+    print(ui.success(summary) if new_jobs else ui.dim(summary))

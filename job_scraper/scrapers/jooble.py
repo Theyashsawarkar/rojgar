@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import requests
 
+from .. import ui
 from ..config import Config
 from ..models import Job
 from .base import JobScraper
@@ -26,7 +27,7 @@ class JoobleScraper(JobScraper):
 
     def search(self, config: Config) -> list[Job]:
         if not config.jooble_api_key:
-            print("  ℹ️  jooble: skipped -- no API key set (see README for how to get a free one)")
+            print(ui.info("  ℹ️  jooble: skipped -- no API key set (see README for how to get a free one)"))
             return []
 
         jobs: list[Job] = []
@@ -37,7 +38,7 @@ class JoobleScraper(JobScraper):
                 response = requests.post(API_URL.format(key=config.jooble_api_key), json=body, timeout=15)
                 response.raise_for_status()
             except requests.RequestException as error:
-                print(f"  ⚠️  jooble: request failed for '{keyword}': {error}")
+                print(ui.warn(f"  ⚠️  jooble: request failed for '{keyword}': {error}"))
                 continue
 
             for raw in response.json().get("jobs", []):

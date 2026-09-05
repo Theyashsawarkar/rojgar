@@ -14,6 +14,7 @@ import re
 
 import requests
 
+from .. import ui
 from ..config import Config
 from ..models import Job
 from .base import JobScraper
@@ -51,7 +52,7 @@ class HNHiringScraper(JobScraper):
     def search(self, config: Config) -> list[Job]:
         thread_id = _latest_hiring_thread_id()
         if thread_id is None:
-            print("  ⚠️  hn_hiring: couldn't find the latest 'Who is hiring?' thread")
+            print(ui.warn("  ⚠️  hn_hiring: couldn't find the latest 'Who is hiring?' thread"))
             return []
 
         jobs: list[Job] = []
@@ -65,7 +66,7 @@ class HNHiringScraper(JobScraper):
                 )
                 response.raise_for_status()
             except requests.RequestException as error:
-                print(f"  ⚠️  hn_hiring: request failed: {error}")
+                print(ui.warn(f"  ⚠️  hn_hiring: request failed: {error}"))
                 break
 
             data = response.json()

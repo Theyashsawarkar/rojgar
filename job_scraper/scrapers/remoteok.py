@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import requests
 
+from .. import ui
 from ..config import Config
 from ..models import Job
 from ..text_utils import normalize_location, strip_html
@@ -23,7 +24,7 @@ class RemoteOKScraper(JobScraper):
             response.raise_for_status()
             entries = response.json()
         except requests.RequestException as error:
-            print(f"  ⚠️  remoteok: request failed: {error}")
+            print(ui.warn(f"  ⚠️  remoteok: request failed: {error}"))
             return []
 
         jobs: list[Job] = []

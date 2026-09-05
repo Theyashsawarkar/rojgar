@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rojgar"
+version = "0.1.0"
+description = "Terminal job scraper for India-relevant listings, logged to an Excel sheet with dedup."
+requires-python = ">=3.10"
+dynamic = ["dependencies"]
+
+[project.scripts]
+rojgar = "job_scraper.cli:main"
+
+[tool.setuptools]
+packages = ["job_scraper", "job_scraper.scrapers"]
+
+[tool.setuptools.dynamic]
+dependencies = { file = ["requirements.txt"] }

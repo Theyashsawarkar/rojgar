@@ -9,6 +9,8 @@ import json
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
+from . import ui
+
 CONFIG_PATH = Path(__file__).resolve().parent.parent / "config.json"
 
 DEDUP_CHOICES = ("title_company", "url", "both")
@@ -70,8 +72,8 @@ def save(config: Config) -> None:
 
 
 def _ask(prompt: str, default: str = "") -> str:
-    suffix = f" [{default}]" if default else ""
-    answer = input(f"{prompt}{suffix}: ").strip()
+    suffix = ui.dim(f" [{default}]") if default else ""
+    answer = input(f"{ui.bold(prompt)}{suffix}: ").strip()
     return answer if answer else default
 
 
@@ -81,7 +83,7 @@ def _ask_float(prompt: str, default: float) -> float:
         try:
             return float(raw)
         except ValueError:
-            print("  Please enter a number.")
+            print(ui.warn("  Please enter a number."))
 
 
 def _ask_optional_float(prompt: str) -> float | None:
@@ -100,15 +102,15 @@ def _ask_choice(prompt: str, choices: tuple[str, ...], default: str) -> str:
         raw = _ask(f"{prompt} ({'/'.join(choices)})", default)
         if raw in choices:
             return raw
-        print(f"  Please pick one of: {', '.join(choices)}")
+        print(ui.warn(f"  Please pick one of: {', '.join(choices)}"))
 
 
 def run_interactive_setup() -> Config:
     """One question at a time, sane defaults on everything, most
     fields skippable with a bare Enter. Ends by writing config.json so
     this never runs again unless the user explicitly re-runs `configure`."""
-    print("Let's set up your job search preferences (one-time -- saved to")
-    print(f"{CONFIG_PATH.name}, edit that file directly or run 'configure' again to change these later).\n")
+    print(ui.heading("Let's set up your job search preferences") + ui.dim(" (one-time -- saved to"))
+    print(ui.dim(f"{CONFIG_PATH.name}, edit that file directly or run 'configure' again to change these later).\n"))
 
     tech_stack_raw = _ask("Tech stack / keywords, comma-separated (e.g. Python, React, Django)")
     tech_stack = [t.strip() for t in tech_stack_raw.split(",") if t.strip()]
@@ -158,5 +160,5 @@ def run_interactive_setup() -> Config:
         schedule_interval_hours=schedule_interval_hours,
     )
     save(config)
-    print(f"\nSaved to {CONFIG_PATH}. Run `job-scraper run` any time, or `job-scraper configure` to change these again.\n")
+    print(ui.success(f"\nSaved to {CONFIG_PATH}.") + f" Run {ui.bold('rojgar run')} any time, or {ui.bold('rojgar configure')} to change these again.\n")
     return config
