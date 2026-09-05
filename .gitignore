@@ -4,4 +4,4 @@ __pycache__/
 *.egg-info/
 config.json
 data/geocode_cache.json
-jobs.xlsx
+rojgar.db

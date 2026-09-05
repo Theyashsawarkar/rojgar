@@ -2,8 +2,10 @@
 
 ("rojgar" -- रोजगार, Hindi for "employment") A terminal tool that searches
 multiple job sources for listings matching your tech stack, city (plus a
-search radius around it), salary range, and experience level, and logs new
-matches to an Excel sheet -- so the same posting never shows up twice.
+search radius around it), salary range, and experience level, logs new
+matches to a local SQLite database, and gives you a real, authenticated web
+dashboard to browse and manage them -- so the same posting never shows up
+twice and you're not stuck reading a spreadsheet.
 
 ```
 ========================================
@@ -13,30 +15,36 @@ matches to an Excel sheet -- so the same posting never shows up twice.
 
 ## Install
 
-Installs into a project-local virtual environment and puts a `rojgar`
-command on your PATH, so you can run it from anywhere without `cd`-ing into
-the project or activating the venv each time.
+One command creates a project-local virtual environment, installs
+everything into it, and puts a `rojgar` command on your PATH -- so you can
+run it from any directory afterwards without activating anything or typing
+its full path.
 
 **Linux / macOS:**
 
 ```bash
-cd job-scraper
+git clone git@github.com:Theyashsawarkar/rojgar.git
+cd rojgar
 ./scripts/install.sh
 ```
 
 **Windows (PowerShell):**
 
 ```powershell
-cd job-scraper
+git clone https://github.com/Theyashsawarkar/rojgar.git
+cd rojgar
 powershell -ExecutionPolicy Bypass -File scripts\install.ps1
 ```
 
-Open a new terminal afterwards if `rojgar` isn't found right away -- PATH
-changes only apply to terminals opened after the change.
+Both scripts check your Python version (3.10+ required), create the venv,
+install dependencies, and link/shim the `rojgar` command onto your PATH.
+Open a **new** terminal afterwards if `rojgar` isn't found right away --
+PATH changes only apply to terminals opened after the change.
 
-> The Windows installer/scheduler were written carefully but only tested on
-> Linux in this session (no Windows machine was available to verify against).
-> If something doesn't work as described, that's the first place to check.
+> The Windows installer, scheduler, and self-updater were written carefully
+> but only tested on Linux in this project (no Windows machine was
+> available during development). If something doesn't work as described on
+> Windows, that's the first place to check -- please open an issue.
 
 ## First run
 
@@ -49,11 +57,7 @@ city, radius, salary target, experience, dedup strategy, run pattern) and
 saves your answers to `config.json` in the project root, so it never asks
 again. Every question has a sane default -- just press Enter to accept it.
 
-To redo the setup from scratch:
-
-```bash
-rojgar configure
-```
+To redo the setup from scratch: `rojgar configure`.
 
 ## Everyday use
 
@@ -68,12 +72,32 @@ run only -- it never touches the saved file:
 rojgar run --city Pune --radius-km 100 --salary-target 8
 ```
 
-Run `rojgar run --help` for the full list of overridable flags (tech stack,
-city, radius, salary target/buffer, experience, dedup strategy, sources,
-output file, API keys, unknown-salary/location handling).
+Run `rojgar --help` for an overview of every command, or `rojgar run --help`
+for the full list of overridable flags with an explanation of what each one
+actually does (tech stack, city, radius, salary target/buffer, experience,
+dedup strategy, sources, database path, API keys, unknown-salary/location
+handling).
 
 Output is colored when run in a real terminal, and automatically plain when
 piped/redirected or when the `NO_COLOR` environment variable is set.
+
+## The web dashboard
+
+```bash
+rojgar ui
+```
+
+Opens `http://127.0.0.1:5151` in your browser -- a dark, searchable table of
+every job in your database, with stat cards (total / applied / not applied),
+a search box, an applied/not-applied filter, and a one-click "Mark applied"
+toggle, replacing the old "open jobs.xlsx and edit a cell" flow entirely.
+
+The first time you run `rojgar ui`, it asks you to set a dashboard username
+and password (stored as a salted hash in the database, never in plain
+text). The dashboard only listens on `127.0.0.1` by default -- nothing
+outside your machine can reach it unless you explicitly pass `--host`.
+
+To change the login later: `rojgar auth`.
 
 ## How matching works
 
@@ -90,7 +114,7 @@ piped/redirected or when the `NO_COLOR` environment variable is set.
   `--exclude-unknown-salary`).
 - **Dedup**: every job gets a dedup key from whichever strategy you chose
   (`title_company`, `url`, or `both`). A job is skipped if it matches
-  something already in the Excel sheet, *or* something already seen earlier
+  something already in the database, *or* something already seen earlier
   in the same run (two sources can return the same posting).
 
 ## Recurring runs
@@ -111,6 +135,18 @@ lingering: `loginctl enable-linger $(whoami)`.
 
 Changing the cadence later is just: edit `schedule_interval_hours` in
 `config.json`, then run `schedule --install` again.
+
+## Staying up to date
+
+```bash
+rojgar --update
+```
+
+Fetches this GitHub repo, and if `origin` has commits you don't have yet,
+fast-forwards your local checkout and reinstalls dependencies. It never
+force-resets anything -- if you have uncommitted local edits, or your
+history has diverged (e.g. you changed files in place), it tells you
+exactly what to do instead of discarding anything.
 
 ## Job sources
 
@@ -155,17 +191,22 @@ source still runs normally.
 
 ```
 job_scraper/
-  cli.py          argparse CLI: run / configure / schedule
+  cli.py          argparse CLI: run / configure / schedule / ui / auth, --update
   config.py       Config dataclass, load/save, interactive setup
-  runner.py       wires scrapers + filtering + excel_store together
+  runner.py       wires scrapers + filtering + db together
   filtering.py    keyword/salary/location matching, dedup
   salary.py       best-effort salary string parsing -> LPA range
   geocoding.py    Nominatim geocoding + haversine distance, disk-cached
-  excel_store.py  reads/writes jobs.xlsx
+  db.py           SQLite storage for jobs
+  auth.py         password hashing/verification for the dashboard login
+  webapp.py       Flask app: login, dashboard, search/filter, applied-toggle
+  templates/      login.html, dashboard.html
+  static/         style.css, app.js
+  updater.py      `rojgar --update` -- git fetch/pull + reinstall
+  scheduler.py    systemd --user timer (Linux) / Task Scheduler (Windows)
   models.py       the Job dataclass every scraper returns
   text_utils.py   small shared text-cleanup helpers
   ui.py           cross-platform terminal colors/banner
-  scheduler.py    systemd --user timer (Linux) / Task Scheduler (Windows)
   scrapers/       one file per job source, each a JobScraper subclass
 scripts/
   install.sh      Linux/macOS installer -- venv + pip install -e . + PATH link
@@ -179,6 +220,7 @@ point are declared in `pyproject.toml`.
 
 ## Files not committed
 
-`.venv/`, `config.json` (your personal preferences), `jobs.xlsx` (your
-personal data), and `data/geocode_cache.json` (regenerates automatically)
-are all gitignored -- see `.gitignore`.
+`.venv/`, `config.json` (your personal preferences and dashboard session
+key), `rojgar.db` (your personal data, including your hashed dashboard
+password), and `data/geocode_cache.json` (regenerates automatically) are
+all gitignored -- see `.gitignore`.

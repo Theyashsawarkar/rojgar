@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Rojgar Dashboard</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <header class="topbar">
+    <h1>Rojgar</h1>
+    <a class="logout" href="{{ url_for('logout') }}">Log out</a>
+  </header>
+
+  <section class="stats">
+    <div class="stat-card"><span class="stat-value">{{ total }}</span><span class="stat-label">Total jobs</span></div>
+    <div class="stat-card"><span class="stat-value">{{ applied }}</span><span class="stat-label">Applied</span></div>
+    <div class="stat-card"><span class="stat-value">{{ total - applied }}</span><span class="stat-label">Not applied</span></div>
+    <div class="stat-card"><span class="stat-value">{{ shown }}</span><span class="stat-label">Shown</span></div>
+  </section>
+
+  <form class="controls" method="get">
+    <input type="text" name="q" placeholder="Search company, title, location..." value="{{ query }}">
+    <select name="status">
+      <option value="all" {% if status == "all" %}selected{% endif %}>All</option>
+      <option value="not_applied" {% if status == "not_applied" %}selected{% endif %}>Not applied</option>
+      <option value="applied" {% if status == "applied" %}selected{% endif %}>Applied</option>
+    </select>
+    <button type="submit">Filter</button>
+  </form>
+
+  <table class="jobs">
+    <thead>
+      <tr>
+        <th>Company</th><th>Title</th><th>Salary</th><th>Location</th><th>Source</th><th>Status</th><th>Apply</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for job in jobs %}
+      <tr id="job-{{ job['id'] }}" class="{{ 'applied' if job['is_applied'] else '' }}">
+        <td>{{ job['company'] }}</td>
+        <td>{{ job['title'] }}</td>
+        <td>{{ job['salary'] or '—' }}</td>
+        <td>{{ job['location'] or '—' }}</td>
+        <td><span class="badge">{{ job['source'] }}</span></td>
+        <td>
+          <button class="toggle-btn" data-id="{{ job['id'] }}">
+            {{ 'Applied ✓' if job['is_applied'] else 'Mark applied' }}
+          </button>
+        </td>
+        <td><a class="apply-link" href="{{ job['apply_link'] }}" target="_blank" rel="noopener">Open ↗</a></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="7" class="empty">No jobs yet — run <code>rojgar run</code> to search.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>

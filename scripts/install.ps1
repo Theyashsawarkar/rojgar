@@ -5,6 +5,18 @@
 # Run from PowerShell:  powershell -ExecutionPolicy Bypass -File scripts\install.ps1
 $ErrorActionPreference = "Stop"
 
+$python = Get-Command python -ErrorAction SilentlyContinue
+if (-not $python) {
+    Write-Error "python not found on PATH -- install Python 3.10+ from python.org first."
+    exit 1
+}
+
+$versionOk = & python -c "import sys; print(1 if sys.version_info >= (3, 10) else 0)"
+if ($versionOk -ne "1") {
+    Write-Error "rojgar needs Python 3.10+. Found: $(python --version)"
+    exit 1
+}
+
 $ProjectRoot = Split-Path -Parent $PSScriptRoot
 $Venv = Join-Path $ProjectRoot ".venv"
 
@@ -34,4 +46,8 @@ if ($UserPath -notlike "*$BinDir*") {
     Write-Host "Done."
 }
 
-Write-Host "Then try: rojgar --help"
+Write-Host ""
+Write-Host "Next steps (in a new terminal):"
+Write-Host "  rojgar run     search for jobs (walks you through setup the first time)"
+Write-Host "  rojgar ui      open the web dashboard"
+Write-Host "  rojgar --help  see every command and flag"

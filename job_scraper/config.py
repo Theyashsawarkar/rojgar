@@ -34,7 +34,7 @@ class Config:
     dedup_strategy: str = "title_company"
     include_unknown_salary: bool = True
     include_unknown_location: bool = True
-    output_path: str = "jobs.xlsx"
+    db_path: str = "rojgar.db"
     run_pattern: str = "manual"
     schedule_interval_hours: int | None = 24
     sources: list[str] = field(default_factory=lambda: list(KNOWN_SOURCES))
@@ -45,6 +45,11 @@ class Config:
     adzuna_app_id: str = ""
     adzuna_app_key: str = ""
     jooble_api_key: str = ""
+    # Flask's session-signing key for the web dashboard -- generated
+    # once (see cli.py's `ui` command) and reused after that, rather
+    # than a new one every run, which would invalidate every open
+    # session and force a re-login each time.
+    secret_key: str = ""
 
     @property
     def salary_range(self) -> tuple[float, float] | None:
